@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
 type FormInputs = {
@@ -44,7 +44,7 @@ type PaymentData = {
   // Add other relevant fields
 };
 
-export default function MakeOrderPage() {
+function MakeOrderContent() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -249,5 +249,13 @@ export default function MakeOrderPage() {
         />
       )} */}
     </div>
+  );
+}
+
+export default function MakeOrderPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MakeOrderContent />
+    </Suspense>
   );
 }

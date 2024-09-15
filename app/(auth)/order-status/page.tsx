@@ -1,15 +1,20 @@
 "use client";
 
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useRouter } from 'next/navigation';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
-export default function OrderStatusPage() {
+function OrderStatusContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [statusMessage, setStatusMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -17,18 +22,24 @@ export default function OrderStatusPage() {
     const collectionStatus = searchParams.get("collection_status");
 
     if (status === "approved" && collectionStatus === "approved") {
-      setStatusMessage('Your order was successfully created and payment was approved!');
+      setStatusMessage(
+        "Your order was successfully created and payment was approved!"
+      );
     } else if (status === "pending" || collectionStatus === "pending") {
-      setStatusMessage('Your order was created, but the payment is still pending. Please check back later.');
+      setStatusMessage(
+        "Your order was created, but the payment is still pending. Please check back later."
+      );
     } else {
-      setStatusMessage('There was an issue with your order or payment. Please try again or contact support.');
+      setStatusMessage(
+        "There was an issue with your order or payment. Please try again or contact support."
+      );
     }
 
     setIsLoading(false);
   }, [searchParams]);
 
   const handleBackToHome = () => {
-    router.push('/');
+    router.push("/");
   };
 
   if (isLoading) {
@@ -47,8 +58,8 @@ export default function OrderStatusPage() {
         <CardContent>
           <p className="text-center mb-4">{statusMessage}</p>
           <div className="text-sm text-gray-500 mb-4">
-            <p>Payment ID: {searchParams.get('payment_id')}</p>
-            <p>Order ID: {searchParams.get('merchant_order_id')}</p>
+            <p>Payment ID: {searchParams.get("payment_id")}</p>
+            <p>Order ID: {searchParams.get("merchant_order_id")}</p>
           </div>
           <Button onClick={handleBackToHome} className="w-full">
             Back to Home
@@ -56,5 +67,13 @@ export default function OrderStatusPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function OrderStatusPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OrderStatusContent />
+    </Suspense>
   );
 }

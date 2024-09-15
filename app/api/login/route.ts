@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     console.log('Next.js API received:', loginData); // Add this line
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}auth/login`, // Remove the trailing slash if present in the URL
+      `${process.env.NEXT_PUBLIC_API_URL}user/auth/login`, // Remove the trailing slash if present in the URL
       {
         method: "POST",
         headers: {

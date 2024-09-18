@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -21,10 +21,16 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
+import { v4 as uuidv4 } from "uuid";
+
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+};
 
 type FormInputs = {
-  itemName: string;
-  valor: number;
+  selectedProducts: number[];
   restaurantId: string;
 };
 
@@ -34,30 +40,63 @@ type Restaurant = {
   valor: number;
 };
 
-type OrderData = FormInputs & {
+type OrderData = {
+  products: Product[];
+  restaurantId: string;
   orderId: number;
 };
 
 type PaymentData = {
-  // Define the structure of your payment data here
   orderId: number;
-  // Add other relevant fields
+  products: Product[];
+  restaurantId: string;
+  total: number;
 };
 
 function MakeOrderContent() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const router = useRouter();
   const searchParams = useSearchParams();
   const paymentStatus = searchParams.get("status");
+
   const {
-    register,
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<FormInputs>();
+  } = useForm<FormInputs>({
+    defaultValues: {
+      selectedProducts: [],
+    },
+  });
+
+  const handleProductSelection = (productId: number) => {
+    setSelectedProducts((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const calculateTotal = () => {
+    return selectedProducts
+      .reduce((sum, id) => {
+        const product = products.find((p) => p.id === id);
+        return sum + (product ? product.price : 0);
+      }, 0)
+      .toFixed(2);
+  };
+
+  // Mock products
+  const products: Product[] = [
+    { id: 1, name: "Pizza Margherita", price: 12.99 },
+    { id: 2, name: "Burger", price: 8.99 },
+    { id: 3, name: "Pasta Carbonara", price: 10.99 },
+    { id: 4, name: "Caesar Salad", price: 7.99 },
+    { id: 5, name: "Fish and Chips", price: 11.99 },
+  ];
 
   useEffect(() => {
     const fetchRestaurants = async () => {
@@ -124,6 +163,11 @@ function MakeOrderContent() {
 
   const onSubmit: SubmitHandler<FormInputs> = async (data) => {
     setIsSubmitting(true);
+    const selectedProductsData = products.filter((p) =>
+      selectedProducts.includes(p.id)
+    );
+    const total = parseFloat(calculateTotal());
+
     try {
       const response = await fetch("/api/order/create", {
         method: "POST",
@@ -132,19 +176,29 @@ function MakeOrderContent() {
         },
         body: JSON.stringify({
           ...data,
+          products: selectedProductsData,
+          restaurantId: data.restaurantId,
           status: "Pendente Pagamento",
+          valor: total,
         }),
       });
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Order created:", result, data);
-        setOrderData({ ...data, orderId: result.id });
+        console.log("Order created:", result);
+        setOrderData({
+          products: selectedProductsData,
+          restaurantId: data.restaurantId,
+          orderId: result.id,
+        });
         makePayment({
+          orderId: uuidv4(),
+          products: selectedProductsData,
+          total,
           ...data,
-          id: result.id,
-          title: data.itemName,
-          quantity: +data.valor,
+          id: uuidv4(),
+          title: `new-order-${uuidv4()}`,
+          quantity: +total,
           back_url: "https://main--rurafood.netlify.app/order-status/",
         });
       } else {
@@ -159,6 +213,8 @@ function MakeOrderContent() {
       setIsSubmitting(false);
     }
   };
+
+  console.log(selectedProducts);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -178,37 +234,30 @@ function MakeOrderContent() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Make an Order</CardTitle>
-          <CardDescription>Place your order</CardDescription>
+          <CardDescription>
+            Select your items and place your order
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="itemName">Item Name</Label>
-              <Input
-                id="itemName"
-                placeholder="e.g., Pizza Margherita"
-                {...register("itemName", { required: "Item name is required" })}
-              />
-              {errors.itemName && (
-                <p className="text-red-500">{errors.itemName.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="valor">Value</Label>
-              <Input
-                id="valor"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="e.g., 100.00"
-                {...register("valor", {
-                  required: "Value is required",
-                  min: { value: 0, message: "Value must be positive" },
-                })}
-              />
-              {errors.valor && (
-                <p className="text-red-500">{errors.valor.message}</p>
+              <Label>Select Products</Label>
+              {products.map((product) => (
+                <div key={product.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`product-${product.id}`}
+                    checked={selectedProducts.includes(product.id)}
+                    onCheckedChange={() => handleProductSelection(product.id)}
+                  />
+                  <Label htmlFor={`product-${product.id}`}>
+                    {product.name} - ${product.price.toFixed(2)}
+                  </Label>
+                </div>
+              ))}
+              {errors.selectedProducts && (
+                <p className="text-red-500">
+                  {errors.selectedProducts.message}
+                </p>
               )}
             </div>
 
@@ -236,6 +285,18 @@ function MakeOrderContent() {
               )}
             </div>
 
+            <div>
+              <p>
+                Total: $
+                {selectedProducts
+                  .reduce((sum, id) => {
+                    const product = products.find((p) => p.id === parseInt(id));
+                    return sum + (product ? product.price : 0);
+                  }, 0)
+                  .toFixed(2)}
+              </p>
+            </div>
+
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Placing Order..." : "Place Order"}
             </Button>
@@ -247,13 +308,6 @@ function MakeOrderContent() {
           </Button>
         </CardFooter>
       </Card>
-      {/* {orderData && (
-        <PaymentModal
-          isOpen={isPaymentModalOpen}
-          onClose={() => setIsPaymentModalOpen(false)}
-          orderData={orderData}
-        />
-      )} */}
     </div>
   );
 }

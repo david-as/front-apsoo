@@ -10,23 +10,56 @@ import {
 } from "@/components/ui/card";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+type Order = {
+  created: string;
+  id: number;
+  status: string;
+  valor: number;
+};
 
 function OrderStatusContent() {
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch("/api/orders?sort=asc", {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setOrders(data);
+        } else {
+          console.error("Failed to fetch orders");
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const [statusMessage, setStatusMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (orders.length === 0) return;
     const status = searchParams.get("status");
     const collectionStatus = searchParams.get("collection_status");
-    const merchantOrderId = searchParams.get("merchant_order_id");
 
     if (status === "approved" && collectionStatus === "approved") {
       setStatusMessage(
         "Your order was successfully created and payment was approved!"
       );
-      updateOrderStatus(merchantOrderId);
+      updateOrderStatus(orders[orders.length - 1].id);
     } else if (status === "pending" || collectionStatus === "pending") {
       setStatusMessage(
         "Your order was created, but the payment is still pending. Please check back later."
@@ -38,29 +71,29 @@ function OrderStatusContent() {
     }
 
     setIsLoading(false);
-  }, [searchParams]);
+  }, [orders, searchParams]);
 
   const handleBackToHome = () => {
     router.push("/orders");
   };
 
-  const updateOrderStatus = async (orderId: string | null) => {
+  const updateOrderStatus = async (orderId: string | number | null) => {
     if (!orderId) return;
 
     try {
       const response = await fetch(`/api/order/update/${orderId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: "Pago Com sucesso" }),
       });
 
       if (!response.ok) {
-        console.error('Failed to update order status');
+        console.error("Failed to update order status");
       }
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error("Error updating order status:", error);
     }
   };
 

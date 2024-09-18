@@ -20,11 +20,13 @@ function OrderStatusContent() {
   useEffect(() => {
     const status = searchParams.get("status");
     const collectionStatus = searchParams.get("collection_status");
+    const merchantOrderId = searchParams.get("merchant_order_id");
 
     if (status === "approved" && collectionStatus === "approved") {
       setStatusMessage(
         "Your order was successfully created and payment was approved!"
       );
+      updateOrderStatus(merchantOrderId);
     } else if (status === "pending" || collectionStatus === "pending") {
       setStatusMessage(
         "Your order was created, but the payment is still pending. Please check back later."
@@ -39,7 +41,27 @@ function OrderStatusContent() {
   }, [searchParams]);
 
   const handleBackToHome = () => {
-    router.push("/");
+    router.push("/orders");
+  };
+
+  const updateOrderStatus = async (orderId: string | null) => {
+    if (!orderId) return;
+
+    try {
+      const response = await fetch(`/api/order/update/${orderId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: "Pago Com sucesso" }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to update order status');
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+    }
   };
 
   if (isLoading) {

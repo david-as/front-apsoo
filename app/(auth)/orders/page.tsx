@@ -30,13 +30,20 @@ type Order = {
 
 export default function RestaurantOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  console.log(orders);
   const router = useRouter();
 
   useEffect(() => {
-    // Fetch orders from your API here
     const fetchOrders = async () => {
       try {
-        const response = await fetch("/api/orders");
+        const response = await fetch("/api/orders?sort=asc", {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        });
         if (response.ok) {
           const data = await response.json();
           setOrders(data);
@@ -50,6 +57,30 @@ export default function RestaurantOrdersPage() {
 
     fetchOrders();
   }, []);
+
+  const updateOrderStatus = async (orderId: number, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/order/update/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        setOrders(
+          orders.map((order) =>
+            order.id === orderId ? { ...order, status: newStatus } : order
+          )
+        );
+      } else {
+        console.error("Failed to update order status");
+      }
+    } catch (error) {
+      console.error("Error updating order status:", error);
+    }
+  };
 
   return (
     <div className="container mx-auto py-10">
@@ -66,25 +97,56 @@ export default function RestaurantOrdersPage() {
                 <TableHead>Created</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Value</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {orders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell>{order.id}</TableCell>
-                  <TableCell>{new Date(order.created).toLocaleString()}</TableCell>
+                  <TableCell>
+                    {new Date(order.created).toLocaleString()}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        order.status === "Pendente Pagamento"
+                        order.status.toLowerCase().includes("pago")
+                          ? "default"
+                          : order.status.includes("Pendente")
                           ? "destructive"
-                          : "default"
+                          : "secondary"
+                      }
+                      className={
+                        order.status.toLowerCase().includes("pago")
+                          ? "bg-yellow-500 hover:bg-yellow-600"
+                          : ""
                       }
                     >
                       {order.status}
                     </Badge>
                   </TableCell>
                   <TableCell>R$ {order.valor.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        updateOrderStatus(order.id, "Preparando pedido")
+                      }
+                      disabled={order.status !== "Pendente Pagamento"}
+                    >
+                      Preparando pedido
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        updateOrderStatus(order.id, "Saiu para entrega")
+                      }
+                      disabled={order.status !== "Preparando pedido"}
+                      className="ml-2"
+                    >
+                      Saiu para entrega
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

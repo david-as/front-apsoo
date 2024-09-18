@@ -138,9 +138,15 @@ function MakeOrderContent() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Order created:", result);
+        console.log("Order created:", result, data);
         setOrderData({ ...data, orderId: result.id });
-        makePayment({ ...data, orderId: result.id, id: result.id });
+        makePayment({
+          ...data,
+          id: result.id,
+          title: data.itemName,
+          quantity: +data.valor,
+          back_url: "https://main--rurafood.netlify.app/order-status/",
+        });
       } else {
         const errorData = await response.json();
         console.error("Failed to create order:", errorData);

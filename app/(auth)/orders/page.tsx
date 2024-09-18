@@ -132,7 +132,7 @@ export default function RestaurantOrdersPage() {
                       onClick={() =>
                         updateOrderStatus(order.id, "Preparando pedido")
                       }
-                      disabled={order.status !== "Pendente Pagamento"}
+                      disabled={!order.status.includes("pago")}
                     >
                       Preparando pedido
                     </Button>

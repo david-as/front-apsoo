@@ -132,7 +132,7 @@ export default function RestaurantOrdersPage() {
                       onClick={() =>
                         updateOrderStatus(order.id, "Preparando pedido")
                       }
-                      disabled={!order.status.includes("pago")}
+                      // disabled={!order.status.includes("pago")}
                     >
                       Preparando pedido
                     </Button>
@@ -141,7 +141,7 @@ export default function RestaurantOrdersPage() {
                       onClick={() =>
                         updateOrderStatus(order.id, "Saiu para entrega")
                       }
-                      disabled={order.status !== "Preparando pedido"}
+                      // disabled={order.status !== "Preparando pedido"}
                       className="ml-2"
                     >
                       Saiu para entrega

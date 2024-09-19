@@ -5,7 +5,7 @@ export async function POST(request: Request) {
     const userData = await request.json();
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/users`,
+      `${process.env.NEXT_PUBLIC_API_URL}user/users`,
       {
         method: "POST",
         headers: {
